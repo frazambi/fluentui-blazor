@@ -15,13 +15,13 @@ public class PaginationState
     /// <summary>
     /// Gets the current zero-based page index. To set it, call <see cref="SetCurrentPageIndexAsync(int)" />.
     /// </summary>
-    public int CurrentPageIndex { get; private set; }
+    public int CurrentPageIndex { get; set; }
 
     /// <summary>
     /// Gets the total number of items across all pages, if known. The value will be null until an
     /// associated <see cref="FluentDataGrid{TGridItem}"/> assigns a value after loading data.
     /// </summary>
-    public int? TotalItemCount { get; private set; }
+    public int? TotalItemCount { get; set; }
 
     /// <summary>
     /// Gets the zero-based index of the last page, if known. The value will be null until <see cref="TotalItemCount"/> is known.

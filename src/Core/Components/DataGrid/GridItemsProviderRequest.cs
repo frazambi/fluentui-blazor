@@ -1,3 +1,6 @@
+using System.Linq;
+using System.Linq.Dynamic.Core;
+
 namespace Microsoft.FluentUI.AspNetCore.Components;
 
 /// <summary>
@@ -25,7 +28,7 @@ public readonly struct GridItemsProviderRequest<TGridItem>
     public ColumnBase<TGridItem>? SortByColumn { get; init; }
 
     /// <summary>
-    /// Gets or sets thecurrent sort direction.
+    /// Gets or sets the current sort direction.
     ///
     /// Rather than inferring the sort rules manually, you should normally call either <see cref="ApplySorting(IQueryable{TGridItem})"/>
     /// or <see cref="GetSortByProperties"/>, since they also account for <see cref="SortByColumn" /> and <see cref="SortByAscending" /> automatically.
@@ -33,18 +36,24 @@ public readonly struct GridItemsProviderRequest<TGridItem>
     public bool SortByAscending { get; init; }
 
     /// <summary>
+    /// Gets or sets the filter as a Dynamic LINQ string used to query the data.
+    /// </summary>
+    public string FilterString { get; init; }
+
+    /// <summary>
     /// Gets or sets a token that indicates if the request should be cancelled.
     /// </summary>
     public CancellationToken CancellationToken { get; init; }
 
     internal GridItemsProviderRequest(
-        int startIndex, int? count, ColumnBase<TGridItem>? sortByColumn, bool sortByAscending,
+        int startIndex, int? count, ColumnBase<TGridItem>? sortByColumn, bool sortByAscending, string filterString,
         CancellationToken cancellationToken)
     {
         StartIndex = startIndex;
         Count = count;
         SortByColumn = sortByColumn;
         SortByAscending = sortByAscending;
+        FilterString = filterString;
         CancellationToken = cancellationToken;
     }
 
@@ -62,4 +71,13 @@ public readonly struct GridItemsProviderRequest<TGridItem>
     /// <returns>A collection of (property name, direction) pairs representing the sorting rules</returns>
     public IReadOnlyCollection<SortedProperty> GetSortByProperties() =>
         SortByColumn?.SortBy?.ToPropertyList(SortByAscending) ?? Array.Empty<SortedProperty>();
+
+    /// <summary>
+    /// Applies the request's filtering rules to the supplied <see cref="IQueryable{TGridItem}"/>.
+    /// </summary>
+    /// <param name="source">An <see cref="IQueryable{TGridItem}"/>.</param>
+    /// <returns>A new <see cref="IQueryable{TGridItem}"/> representing the <paramref name="source"/> with filtering rules applied.</returns>
+    public IQueryable<TGridItem> ApplyFiltering(IQueryable<TGridItem> source) =>
+        !string.IsNullOrEmpty(FilterString) ? source.Where(FilterString) : source;
+
 }

@@ -73,13 +73,6 @@ public abstract partial class ColumnBase<TGridItem>
     [Parameter] public bool? Sortable { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the data is currently filtered by this column.
-    ///
-    /// The default value is false.
-    /// </summary>
-    [Parameter] public bool? Filtered { get; set; }
-
-    /// <summary>
     /// Gets or sets the sorting rules for a column.
     /// </summary>
     public abstract GridSort<TGridItem>? SortBy { get; set; }
@@ -106,6 +99,12 @@ public abstract partial class ColumnBase<TGridItem>
     /// Needs to be a valid CSS width value like '100px', '10%' or '0.5fr'.
     /// </summary>
     [Parameter] public string? Width { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Dynamic LINQ string used to filter the data. If null, this column applies no filter.
+    /// </summary>
+    internal string? CurrentFilterValue { get; set; }
+
 
     /// <summary>
     /// Gets a reference to the enclosing <see cref="FluentDataGrid{TGridItem}" />.
@@ -143,6 +142,11 @@ public abstract partial class ColumnBase<TGridItem>
     /// <returns>True if the column should be sortable by default, otherwise false.</returns>
     protected virtual bool IsSortableByDefault() => false;
 
+    /// <summary>
+    /// Gets a value indicating whether this column is currently used for data filtering.
+    /// </summary>
+    public bool IsFiltered => CurrentFilterValue is not null;
+
     protected void HandleKeyDown(FluentKeyCodeEventArgs e)
     {
         if (e.CtrlKey && e.Key == KeyCode.Enter)
@@ -152,6 +156,14 @@ public abstract partial class ColumnBase<TGridItem>
     }
 
     public bool ShowSortIcon;
+
+    /// <summary>
+    /// Sets <see cref="CurrentFilterValue"/> to null, removing the filter applied by this column.
+    /// </summary>
+    public virtual void RemoveFilter()
+    {
+        CurrentFilterValue = null;
+    }
 
     /// <summary>
     /// Constructs an instance of <see cref="ColumnBase{TGridItem}" />.

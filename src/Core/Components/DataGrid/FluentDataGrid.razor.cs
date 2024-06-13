@@ -168,6 +168,21 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     /// </summary>
     [Parameter] public RenderFragment? LoadingContent { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the columns' values will be treated as case sensitive during filtering.
+    ///
+    /// Defaults to false.
+    /// </summary>
+    [Parameter] public bool CaseSensitive { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the boolean conditional operator that will be used to join each column's condition during filtering.
+    /// Values available: " &amp;&amp; ", " || ".
+    ///
+    /// Defaults to " &amp;&amp; ".
+    /// </summary>
+    [Parameter] public string ColumnsLogicalOperator { get; set; } = " && ";
+
     [Inject] private IServiceProvider Services { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private IKeyCodeService KeyCodeService { get; set; } = default!;
@@ -221,6 +236,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     // If the PaginationState mutates, it raises this event. We use it to trigger a re-render.
     private readonly EventCallbackSubscriber<PaginationState> _currentPageItemsChanged;
     public bool? SortByAscending => _sortByAscending;
+    private string GetFilterString => string.Join(ColumnsLogicalOperator, _columns.Where(x => x.CurrentFilterValue != null).Select(x => x.CurrentFilterValue));
 
     /// <summary>
     /// Constructs an instance of <see cref="FluentDataGrid{TGridItem}"/>.
@@ -351,19 +367,28 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     /// Sets the grid's current sort column to the specified <paramref name="column"/>.
     /// </summary>
     /// <param name="column">The column that defines the new sort order.</param>
-    /// <param name="direction">The direction of sorting. If the value is <see cref="SortDirection.Auto"/>, then it will toggle the direction on each call.</param>
+    /// <param name="direction">The direction of sorting. If the value is <see cref="SortDirection.Auto"/>, then it will cycle between directions on each call.</param>
     /// <returns>A <see cref="Task"/> representing the completion of the operation.</returns>
     public Task SortByColumnAsync(ColumnBase<TGridItem> column, SortDirection direction = SortDirection.Auto)
     {
-        _sortByAscending = direction switch
+        bool? shouldFlipDirectionOrReset = direction switch
         {
             SortDirection.Ascending => true,
             SortDirection.Descending => false,
-            SortDirection.Auto => _sortByColumn != column || !_sortByAscending,
+            SortDirection.Auto => !_sortByAscending && _sortByColumn == column ? null : (_sortByColumn != column || !_sortByAscending),
             _ => throw new NotSupportedException($"Unknown sort direction {direction}"),
         };
 
-        _sortByColumn = column;
+        if (shouldFlipDirectionOrReset.HasValue)
+        {
+            _sortByColumn = column;
+            _sortByAscending = shouldFlipDirectionOrReset.Value;
+        }
+        else
+        {
+            _sortByColumn = null;
+            _sortByAscending = default;
+        }
 
         StateHasChanged(); // We want to see the updated sort order in the header, even before the data query is completed
         return RefreshDataAsync();
@@ -373,7 +398,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     /// Sorts the grid by the specified column <paramref name="title"/> found first. If the title is not found, nothing happens.
     /// </summary>
     /// <param name="title">The title of the column to sort by.</param>
-    /// <param name="direction">The direction of sorting. The default is <see cref="SortDirection.Auto"/>. If the value is <see cref="SortDirection.Auto"/>, then it will toggle the direction on each call.</param>
+    /// <param name="direction">The direction of sorting. If the value is <see cref="SortDirection.Auto"/>, then it will cycle between directions on each call.</param>
     public Task SortByColumnAsync(string title, SortDirection direction = SortDirection.Auto)
     {
         var column = _columns.FirstOrDefault(c => c.Title?.Equals(title, StringComparison.InvariantCultureIgnoreCase) ?? false);
@@ -390,7 +415,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     /// Sorts the grid by the specified column <paramref name="index"/>. If the index is out of range, nothing happens.
     /// </summary>
     /// <param name="index">The index of the column to sort by.</param>
-    /// <param name="direction">The direction of sorting. The default is <see cref="SortDirection.Auto"/>. If the value is <see cref="SortDirection.Auto"/>, then it will toggle the direction on each call.</param>
+    /// <param name="direction">The direction of sorting. If the value is <see cref="SortDirection.Auto"/>, then it will cycle between directions on each call.</param>
     public Task SortByColumnAsync(int index, SortDirection direction = SortDirection.Auto)
     {
         if (index >= 0 && index < _columns.Count)
@@ -419,6 +444,25 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     }
 
     /// <summary>
+    /// Calls <see cref="ColumnBase{TGridItem}.RemoveFilter"/> on each column of the grid, then requeries the data.
+    /// </summary>
+    public Task RemoveFiltersAsync()
+    {
+        foreach (var column in _columns)
+        {
+            column.RemoveFilter();
+        }
+
+        if (Pagination is not null)
+        {
+            Pagination.CurrentPageIndex = 0;
+        }
+
+        StateHasChanged();
+        return RefreshDataCoreAsync();
+    }
+
+    /// <summary>
     /// Displays the <see cref="ColumnBase{TGridItem}.ColumnOptions"/> UI for the specified column, closing any other column
     /// options UI that was previously displayed.
     /// </summary>
@@ -427,12 +471,15 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     {
         _displayOptionsForColumn = column;
         _checkColumnOptionsPosition = true; // Triggers a call to JSRuntime to position the options element, apply autofocus, and any other setup
+
+        // if it's a PropertyColumn, reset unsaved filter value to last submitted value
+        if (column.GetType().GetGenericTypeDefinition() == typeof(PropertyColumn<,>))
+        {
+            column.GetType().GetMethod(nameof(PropertyColumn<int, int>.ResetFilterToLastValue))!.Invoke(column, null);
+        }
+
         StateHasChanged();
         return Task.CompletedTask;
-    }
-    public void SetLoadingState(bool loading)
-    {
-        Loading = loading;
     }
 
     /// <summary>
@@ -467,7 +514,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
             _lastRefreshedPaginationStateHash = Pagination?.GetHashCode();
             var startIndex = Pagination is null ? 0 : (Pagination.CurrentPageIndex * Pagination.ItemsPerPage);
             GridItemsProviderRequest<TGridItem> request = new(
-                startIndex, Pagination?.ItemsPerPage, _sortByColumn, _sortByAscending, thisLoadCts.Token);
+                startIndex, Pagination?.ItemsPerPage, _sortByColumn, _sortByAscending, GetFilterString, thisLoadCts.Token);
             var result = await ResolveItemsRequestAsync(request);
             if (!thisLoadCts.IsCancellationRequested)
             {
@@ -506,7 +553,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
         }
 
         GridItemsProviderRequest<TGridItem> providerRequest = new(
-            startIndex, count, _sortByColumn, _sortByAscending, request.CancellationToken);
+            startIndex, count, _sortByColumn, _sortByAscending, GetFilterString, request.CancellationToken);
         var providerResult = await ResolveItemsRequestAsync(providerRequest);
 
         if (!request.CancellationToken.IsCancellationRequested)
@@ -540,6 +587,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
     {
         if (ItemsProvider is not null)
         {
+            Loading = true;
             var gipr = await ItemsProvider(request);
             if (gipr.Items is not null)
             {
@@ -551,7 +599,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
         {
             var totalItemCount = _asyncQueryExecutor is null ? Items.Count() : await _asyncQueryExecutor.CountAsync(Items);
             _internalGridContext.TotalItemCount = totalItemCount;
-            var result = request.ApplySorting(Items).Skip(request.StartIndex);
+            var result = request.ApplySorting(request.ApplyFiltering(Items)).Skip(request.StartIndex);
             if (request.Count.HasValue)
             {
                 result = result.Take(request.Count.Value);
@@ -622,7 +670,7 @@ public partial class FluentDataGrid<TGridItem> : FluentComponentBase, IHandleEve
         }
     }
 
-    private void CloseColumnOptions()
+    internal void CloseColumnOptions()
     {
         _displayOptionsForColumn = null;
         StateHasChanged();

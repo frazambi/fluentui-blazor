@@ -158,6 +158,17 @@ public partial class FluentButton : FluentComponentBase, IAsyncDisposable
     [Parameter]
     public EventCallback<MouseEventArgs> OnClick { get; set; }
 
+    /// <summary>
+    /// Gets or sets the color of the icon (overrides the <see cref="Appearance"/> property).
+    /// </summary>
+    [Parameter]
+    public string CustomIconAppearance { get; set; }
+
+    /// <summary>
+    /// Gets or sets if <see cref="CustomIconAppearance"/> is valid.
+    /// </summary>
+    private bool IsCustom { get; set; } = false;
+
     protected override void OnParametersSet()
     {
         string[] values = ["_self", "_blank", "_parent", "_top"];
