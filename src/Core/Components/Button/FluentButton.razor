@@ -17,8 +17,11 @@ else
 }
 
 @code{
+
     protected void RenderButton(RenderTreeBuilder __builder)
     {
+        Color customColor = default;
+
         <fluent-button @ref=Element
                class="@(LoadingOverlay ? string.Empty : Class)"
                style="@(LoadingOverlay ? "width: 100%;" : Style)"
@@ -41,6 +44,11 @@ else
                appearance=@Appearance.ToAttributeValue()
                @onclick="@OnClickHandlerAsync"
                @attributes="AdditionalAttributes">
+
+            @if (!string.IsNullOrEmpty(CustomIconAppearance)) {
+                IsCustom = Enum.TryParse(CustomIconAppearance, out customColor);
+            }
+
             @if (IconStart != null)
             {
                 if (Loading)
@@ -50,7 +58,8 @@ else
                 else
                 {
                     <FluentIcon Value="@(IconStart.InverseColor(Appearance == AspNetCore.Components.Appearance.Accent))"
-                                Slot="@(ChildContent != null ? "start" : null)" />
+                                Slot="@(ChildContent != null ? "start" : null)"
+                                Color="@(IsCustom ? customColor : null)" />
                 }
             }
             @ChildContent
@@ -63,7 +72,8 @@ else
                 else
                 {
                     <FluentIcon Value="@(IconEnd.InverseColor(Appearance == AspNetCore.Components.Appearance.Accent))"
-                                Slot="@(ChildContent != null ? "end" : null)" />
+                                Slot="@(ChildContent != null ? "end" : null)"
+                                Color="@(IsCustom ? customColor : null)" />
                 }
             }
         </fluent-button>

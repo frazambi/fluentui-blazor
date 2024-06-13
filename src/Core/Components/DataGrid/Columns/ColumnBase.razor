@@ -20,7 +20,7 @@
             @if (ColumnOptions is not null && (Align == Align.Start || Align == Align.Center))
             {
                 <FluentButton Appearance="Appearance.Stealth" class="col-options-button" @onclick="@(() => Grid.ShowColumnOptionsAsync(this))" aria-label="Filter this column">
-                    @if (Filtered.GetValueOrDefault())
+                    @if (IsFiltered)
                     {
                         <FluentIcon Value="@(new CoreIcons.Regular.Size24.FilterDismiss())" />
                     }
@@ -33,7 +33,7 @@
 
             if (Sortable.HasValue ? Sortable.Value : IsSortableByDefault())
             {
-                <FluentKeyCode Only="new [] { KeyCode.Ctrl, KeyCode.Enter}" OnKeyDown="HandleKeyDown" class="keycapture">
+                <FluentKeyCode Only="new[] { KeyCode.Ctrl, KeyCode.Enter }" OnKeyDown="HandleKeyDown" class="keycapture">
                 <span class="col-sort-container" @oncontextmenu="@(() => Grid.RemoveSortByColumnAsync(this))" @oncontextmenu:preventDefault>
                     <FluentButton Appearance="Appearance.Stealth" class="col-sort-button" @onclick="@(() => Grid.SortByColumnAsync(this))" aria-label="@tooltip" title="@tooltip">
                         <div class="col-title-text" title="@tooltip">@Title</div>
@@ -64,7 +64,7 @@
             @if (ColumnOptions is not null && Align == Align.End)
             {
                 <FluentButton Appearance="Appearance.Stealth" class="col-options-button" @onclick="@(() => Grid.ShowColumnOptionsAsync(this))" aria-label="Filter this column">
-                    @if (Filtered.GetValueOrDefault())
+                    @if (IsFiltered)
                     {
                         <FluentIcon Value="@(new CoreIcons.Regular.Size24.FilterDismiss())" />
                     }

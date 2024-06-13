@@ -12,6 +12,9 @@ public partial class FluentSearch : FluentInputBase<string?>
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback OnClear { get; set; }
+
     /// <summary />
     private IJSObjectReference? Module { get; set; }
 
@@ -68,6 +71,14 @@ public partial class FluentSearch : FluentInputBase<string?>
         Id = Identifier.NewId();
     }
 
+    protected override async Task ChangeHandlerAsync(ChangeEventArgs e)
+    {
+        await base.ChangeHandlerAsync(e);
+        if (OnClear.HasDelegate)
+        {
+            await OnClear.InvokeAsync();
+        }
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);

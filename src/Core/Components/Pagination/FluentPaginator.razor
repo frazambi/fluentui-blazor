@@ -27,7 +27,21 @@
                 }
                 else
                 {
-                    <text>Page <strong>@(State.CurrentPageIndex + 1)</strong> of <strong>@(State.LastPageIndex + 1)</strong></text>
+                    if (VisiblePageNumbers)
+                    {
+                        int startIndex = Math.Max(State.CurrentPageIndex - (PageButtonsShown / 2), 0);
+                        int endIndex = startIndex + PageButtonsShown - 1;
+                        if (endIndex > State.LastPageIndex)
+                            startIndex = Math.Max(startIndex - (endIndex - State.LastPageIndex ?? 0), 0);
+                        endIndex = Math.Min(endIndex, State.LastPageIndex ?? startIndex);
+
+                        for (int i = startIndex; i <= endIndex; i++)
+                        {
+                            // ho bisogno di copiarmi il valore di i in un'altra variabile altrimenti onclick e ChildContent non funzionano
+                            int j = i;
+                            <FluentButton @onclick="() => GoToPageAsync(j)" Disabled="@(State.CurrentPageIndex == j)" title="@($"Pagina {(j + 1)}")" aria-label="@($"Vai alla pagina {(j + 1)}")">@(j + 1)</FluentButton>
+                        }
+                    }
                 }
 
             </div>
