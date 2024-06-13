@@ -1,0 +1,71 @@
+﻿@using System.Globalization
+@using System.Linq.Expressions
+@using System.Reflection
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Rendering
+@using Microsoft.FluentUI.AspNetCore.Components.DataGrid.Infrastructure
+@using Microsoft.FluentUI.AspNetCore.Components.Enums
+@using WallesCore.Extensions
+@using WallesCore.Helpers
+
+@namespace Microsoft.FluentUI.AspNetCore.Components
+@typeparam TGridItem
+@typeparam TProp
+@inherits ColumnBase<TGridItem>
+@implements IBindableColumn<TGridItem, TProp>
+
+@{
+    InternalGridContext.Grid.AddColumn(this, InitialSortDirection, IsDefaultSortColumn);
+}
+@code {
+
+    private void RenderNumericFilter<TValue>(RenderTreeBuilder __builder) where TValue : new()
+    {
+        _pendingFilterValue ??= default(TValue);
+        <div style="display:flex; flex-direction: column">
+            <FluentNumberField TValue="TValue" ValueChanged="v => _pendingFilterValue = v" Value="@(_pendingFilterValue.ChangeType<TValue>())" />
+            <FluentButton Style="max-width: 30px;margin-top: 5px;" IconStart="@(new CoreIcons.Regular.Size16.Search())" OnClick="async _ => await SetFilterValueAsync<TValue>(_pendingFilterValue.ChangeType<TValue>(), FilterOperator.Equals)">Cerca</FluentButton>
+        </div>
+    }
+
+    private void RenderBooleanFilter(RenderTreeBuilder __builder)
+    {
+        _pendingFilterValue ??= default(bool);
+        <div style="display:flex; flex-direction:column; width:100px">
+            <FluentSwitch ValueChanged="v => _pendingFilterValue = v" Value="@(_pendingFilterValue.ChangeType<bool>())" />
+            <FluentButton Style="max-width: 30px;margin-top: 5px;" IconStart="@(new CoreIcons.Regular.Size16.Search())" OnClick="async _ => await SetFilterValueAsync(_pendingFilterValue.ChangeType<bool>(), FilterOperator.Equals)">Cerca</FluentButton>
+        </div>
+    }
+
+    private void RenderDateFilter(RenderTreeBuilder __builder)
+    {
+        <div style="display:flex; flex-direction: column">
+            <FluentDatePicker ValueChanged="v => DateRange.SetStart(ref _pendingFilterValue, v)" Value="(_pendingFilterValue as DateRange)?.Start"></FluentDatePicker>
+            <FluentDatePicker ValueChanged="v => DateRange.SetEnd(ref _pendingFilterValue, v)" Value="(_pendingFilterValue as DateRange)?.End"></FluentDatePicker>
+            <FluentButton Style="max-width: 30px;margin-top: 5px;" IconStart="@(new CoreIcons.Regular.Size16.Search())" OnClick="async _ => await SetFilterValueAsync<DateRange>(_pendingFilterValue?.ChangeType<DateRange>(), FilterOperator.BetweenIncluding)">Cerca</FluentButton>
+        </div>
+    }
+
+    private void RenderStringFilter(RenderTreeBuilder __builder)
+    {
+        <div style="display:flex; flex-direction: column">
+            <FluentTextField ValueChanged="v => _pendingFilterValue = v" Value="@(_pendingFilterValue.ChangeType<string>())" />
+            <FluentButton Style="max-width: 30px;margin-top: 5px;" IconStart="@(new CoreIcons.Regular.Size16.Search())" OnClick="async _ => await SetFilterValueAsync(_pendingFilterValue.ChangeType<string>()!, FilterOperator.Contains)">Cerca</FluentButton>
+        </div>
+    }
+
+    internal void RenderBooleanIcon(RenderTreeBuilder __builder, bool value)
+    {
+        @if (value) {
+            <FluentIcon Value="@(new CoreIcons.Filled.Size24.CheckmarkCircle())" Color="@Color.Success" />
+        }
+        else {
+            <FluentIcon Value="@(new CoreIcons.Filled.Size24.DismissCircle())" Color="@Color.Error" />
+        }
+    }
+
+    internal void RendelLabel(RenderTreeBuilder __builder, string value)
+    {
+        <span style="">value</span>
+    }
+}

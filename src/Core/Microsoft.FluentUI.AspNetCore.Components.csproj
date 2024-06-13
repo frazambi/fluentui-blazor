@@ -51,6 +51,7 @@
 
   <!-- Code Analysis -->
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -66,9 +67,11 @@
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
+	  <PackageReference Include="System.Linq.Dynamic.Core" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\WallesCore\src\Shared\Core\WallesCore\WallesCore.csproj" />
     <ProjectReference Include="..\Core.Assets\Microsoft.FluentUI.AspNetCore.Components.Assets.esproj" PrivateAssets="All" />
     <ProjectReference Include="..\Extensions\DesignToken.Generator\Microsoft.FluentUI.AspNetCore.Components.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

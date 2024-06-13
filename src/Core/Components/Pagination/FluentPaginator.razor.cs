@@ -20,6 +20,12 @@ public partial class FluentPaginator : FluentComponentBase, IDisposable
     public bool Disabled { get; set; }
 
     /// <summary>
+    /// Gets or sets the number of "go to page" buttons to be shown. Used in conjunction with <see cref="PaginationTextTemplate"/> set to null.
+    /// </summary>
+    [Parameter]
+    public int PageButtonsShown { get; set; } = 5;
+
+    /// <summary>
     /// Gets or sets the associated <see cref="PaginationState"/>. This parameter is required.
     /// </summary>
     [Parameter, EditorRequired]
@@ -41,6 +47,9 @@ public partial class FluentPaginator : FluentComponentBase, IDisposable
     /// </summary>
     [Parameter]
     public RenderFragment? PaginationTextTemplate { get; set; }
+
+    [Parameter]
+    public bool VisiblePageNumbers { get; set; } = true;
 
     /// <summary>
     /// Constructs an instance of <see cref="FluentPaginator" />.
