@@ -11,3 +11,7 @@
     cursor: pointer;
     background-color: var(--datagrid-hover-color, var(--neutral-fill-stealth-hover));
 }
+
+fluent-data-grid-row:nth-child(odd):not(:first-child) {
+    background-color: var(--neutral-layer-2);
+}
